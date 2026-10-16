@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ショート動画アンケート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: phone stage on one side, a lab-style control panel on the other; stacks on phones. */
+:root{
+  --bg:#eef0f6; --surface:#ffffff; --ink:#151a2e; --muted:#5d6480; --line:#d6dae8;
+  --accent:#2f4bff; --accent-ink:#ffffff; --good:#14875a; --bad:#c83a3a; --frame:#151a2e;
+  --display:"Dela Gothic One", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+  --body:"Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0d1120; --surface:#161b2e; --ink:#e8ebf7; --muted:#9aa1bd; --line:#2a3150;
+  --accent:#8c9bff; --accent-ink:#0d1120; --good:#4fd39a; --bad:#ff7a7a; --frame:#000000; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0d1120; --surface:#161b2e; --ink:#e8ebf7; --muted:#9aa1bd; --line:#2a3150;
+  --accent:#8c9bff; --accent-ink:#0d1120; --good:#4fd39a; --bad:#ff7a7a; --frame:#000000; color-scheme:dark }
+
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.7;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:28px 40px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+header{display:flex;flex-direction:column;gap:6px}
+.eyebrow{font-family:var(--body);font-weight:700;font-size:12px;letter-spacing:.08em;color:var(--accent)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(32px,6vw,52px);line-height:1.1;margin:0;text-wrap:balance}
+.lede{color:var(--muted);max-width:40em;margin:0}
+
+.app{display:grid;grid-template-columns:300px minmax(0,1fr);gap:32px;align-items:start}
+@media (max-width:760px){ .app{grid-template-columns:minmax(0,1fr)} .phone{justify-self:center} }
+.phone{width:min(300px,100%);background:var(--frame);border-radius:36px;padding:10px;box-shadow:0 20px 50px -20px rgba(20,26,60,.45)}
+.screen{position:relative;border-radius:28px;overflow:hidden;aspect-ratio:9/16;max-width:100%;background:#000;color:#fff}
+
+/* reel slides (always dark, like any video app) */
+.track{position:absolute;inset:0;transition:transform .32s cubic-bezier(.2,.7,.2,1)}
+.slide{position:absolute;left:0;width:100%;height:100%}
+.slide video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
+.ui{position:absolute;inset:0;pointer-events:none;font-family:var(--body);line-height:1.4}
+.ui .top{position:absolute;top:14px;left:14px;font:700 17px var(--body)}
+.ui .shade{position:absolute;inset:auto 0 0 0;height:42%;background:linear-gradient(transparent,rgba(0,0,0,.6))}
+.ui .rail{position:absolute;right:10px;bottom:96px;display:flex;flex-direction:column;align-items:center;gap:14px;font:700 12px var(--body)}
+.ui .rail span{display:flex;flex-direction:column;align-items:center;gap:3px}
+.ui .rail svg{width:26px;height:26px;fill:#fff}
+.ui .who{position:absolute;left:14px;right:64px;bottom:20px;display:flex;flex-direction:column;gap:3px}
+.ui .who b{font:700 14px var(--body)}
+.ui .who em{font:500 13.5px var(--body);font-style:normal}
+.ui .prog{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.3)}
+.ui .prog i{display:block;height:100%;width:0;background:#fff}
+.cover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:24px;
+  background:linear-gradient(#1a1f36,#0b0e1a);color:#fff}
+.cover strong{font:400 26px var(--display)}
+.cover span{font-size:14px;color:rgba(255,255,255,.65)}
+
+.panel{display:flex;flex-direction:column;gap:18px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px}
+h2{font-family:var(--body);font-weight:700;font-size:22px;line-height:1.4;margin:0;text-wrap:balance}
+.card p{margin:0;color:var(--muted);max-width:40em}
+.big{font-family:var(--mono);font-size:44px;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink)}
+.steps{margin:0;padding-left:20px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.btn{font:700 15px var(--body);background:var(--accent);color:var(--accent-ink);border:0;border-radius:12px;padding:12px 20px;cursor:pointer;align-self:flex-start}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn:focus-visible,.opt:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.q{display:flex;flex-direction:column;gap:8px}
+.q h3{font:700 15px var(--body);margin:0}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:420px){ .opts{grid-template-columns:minmax(0,1fr)} }
+.opt{font:500 14px var(--body);text-align:left;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--good);background:color-mix(in srgb, var(--good) 14%, transparent)}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb, var(--bad) 14%, transparent)}
+.opt.lure::after{content:"後のリールに出た";margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
+.tag{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
+
+.field{display:flex;flex-direction:column;gap:6px;max-width:320px}
+.field input{font:500 15px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.field input:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.st{display:flex;gap:12px;flex-wrap:wrap}
+.field.small{max-width:120px}
+.err{color:var(--bad)}
+.split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.split div{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.split b{font-family:var(--mono);font-size:22px;font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--muted)}
+footer{font-size:12px;color:var(--muted)}
+footer a{color:inherit}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">約1分・匿名OK</span>
+    <h1>ショート動画アンケート</h1>
+    <p class="lede">リールをいくつか見て、最後に簡単な質問に答えてください。</p>
+  </header>
+
+  <div class="app">
+    <div class="phone"><div class="screen" id="screen">
+      <div class="track" id="track"></div>
+      <div class="cover" id="cover"><strong>準備OK？</strong><span>音ありがおすすめ</span></div>
+    </div></div>
+    <div class="panel"><div class="card" id="card"></div></div>
+  </div>
+
+  <footer>映像：<a href="https://peach.blender.org/" target="_blank" rel="noopener">Big Buck Bunny</a> © Blender Foundation, CC BY 3.0（縦型にトリミング）</footer>
+</div>
+
+<script>
+(() => {
+// ▼ Google Apps Script の「ウェブアプリ URL」をここに貼る（空のままなら結果は保存されません）
+const SHEET_ENDPOINT = "";
+
+const CAPTIONS = ["朝ってこんな感じ","コーヒー飲む前の私","誰も聞いてないけど私の朝","10段階で評価して","何回も見ちゃう","リクエストにお応えしてパート2","オフィスのいつもの一日","最後まで見て","話題のやつやってみた","これ完全に私","POV：また月曜日","小さな幸せ"];
+const HANDLES = ["@kai.moves","@nori_eats","@tofu.daily","@sunny.clips","@mika_vlog","@ren.outside","@hana.edits","@daichi.run","@pixel.pao","@yuzu.life","@lumi.loops","@bento.boy"];
+const rnd = n => Math.floor(Math.random()*n);
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];} return a; };
+const fmt = n => n>=1e4 ? (n/1e4).toFixed(1).replace(/\.0$/,"")+"万" : n.toLocaleString("ja-JP");
+const randLikes = () => fmt(Math.round(Math.pow(10, 2.4 + Math.random()*4)));
+
+const CLIPS = ["media/target.mp4","media/feed1.mp4","media/feed2.mp4","media/feed3.mp4"];
+const HEART = '<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4.5 6 4.5c2.2 0 3.5 1.2 6 3.6 2.5-2.4 3.8-3.6 6-3.6 3.7 0 5.6 3.9 4 7.2C19.5 16.4 12 21 12 21z"/></svg>';
+const BUBBLE = '<svg viewBox="0 0 24 24"><path d="M12 3C6.5 3 2 6.8 2 11.5c0 2.4 1.2 4.6 3.1 6.1L4 21l4.3-2c1.2.4 2.4.5 3.7.5 5.5 0 10-3.8 10-8.5S17.5 3 12 3z"/></svg>';
+
+// 動画の内容についての問題（固定）。lures = 後のリールに出てきたもの
+const VIDEO_QS = [
+  { q:"動画に出ていた動物は？", correct:"鳥", options:["鳥","ウサギ","リス","フクロウ"], lures:["ウサギ"] },
+  { q:"どこにいた？", correct:"木の枝の上", options:["木の枝の上","巣穴の前","松の木の下","小川のほとり"], lures:["巣穴の前","松の木の下","小川のほとり"] },
+  { q:"何をしていた？", correct:"あくびをしてから羽をばたつかせた", options:["あくびをしてから羽をばたつかせた","穴から顔を出した","枝をつついていた","果物を食べていた"], lures:["穴から顔を出した"] },
+  { q:"何色だった？", correct:"紫がかったグレー", options:["紫がかったグレー","茶色","鮮やかな青","白っぽいグレー"], lures:["白っぽいグレー"] },
+];
+
+let S, slides = [];
+
+function newGame(){
+  const caps = shuffle(CAPTIONS), hands = shuffle(HANDLES);
+  const likes = new Set(); while (likes.size<4) likes.add(randLikes());
+  const L = [...likes];
+  S = { phase:"intro", idx:0, gapStart:0,
+        reels: CLIPS.map((src,i)=>({ src, caption:caps[i], handle:hands[i], likes:L[i], comments:fmt(rnd(900)+12) })) };
+  S.spare = { caption:caps[4], handle:hands[4] };
+}
+
+function buildSlides(){
+  const track = document.getElementById("track");
+  track.style.transition = "none"; track.style.transform = "translateY(0)";
+  track.innerHTML = S.reels.map((r,i)=>`<div class="slide" style="top:${i*100}%">
+    <video id="v${i}" src="${r.src}" playsinline preload="auto"></video>
+    <div class="ui"><div class="top">リール</div><div class="shade"></div>
+      <div class="rail"><span>${HEART}${r.likes}</span><span>${BUBBLE}${r.comments}</span></div>
+      <div class="who"><b>${r.handle}</b><em>${r.caption}</em></div>
+      <div class="prog"><i id="p${i}"></i></div></div></div>`).join("");
+  void track.offsetHeight; track.style.transition = "";
+  slides = S.reels.map((_,i)=>document.getElementById("v"+i));
+  slides.forEach((v,i)=>{
+    v.addEventListener("timeupdate", ()=>{ const p=document.getElementById("p"+i); if (p && v.duration) p.style.width = (v.currentTime/v.duration*100)+"%"; });
+    v.addEventListener("ended", ()=>advance(i));
+  });
+}
+
+async function play(v){ try { await v.play(); } catch(e){ v.muted = true; try { await v.play(); } catch(_){} } }
+
+function show(i){
+  S.idx = i;
+  document.getElementById("track").style.transform = `translateY(${-i*100}%)`;
+  slides.forEach((v,j)=>{ if (j!==i) v.pause(); });
+  setTimeout(()=>play(slides[i]), i===0 ? 0 : 120);
+}
+
+function advance(i){
+  if (i!==S.idx) return;
+  if (i===0){ S.phase="scroll"; S.gapStart=performance.now(); scrollCard(); show(1); }
+  else if (i < slides.length-1) show(i+1);
+  else quiz();
+}
+
+/* ---------- パネル ---------- */
+const card = document.getElementById("card"), cover = document.getElementById("cover");
+const setCover = (a,b) => { cover.querySelector("strong").textContent = a; cover.querySelector("span").textContent = b; };
+
+function intro(){
+  newGame(); buildSlides();
+  cover.hidden = false; setCover("準備OK？","音ありがおすすめ");
+  card.innerHTML = `<h2>はじめる前に</h2>
+    <ol class="steps"><li>短いリールが何本か自動で流れます。いつもSNSを見ているときと同じように見てください。</li>
+    <li>最後にいくつか簡単な質問に答えます。</li></ol>
+    <label class="field" for="nick"><span class="tag">ニックネーム（任意）</span>
+      <input id="nick" type="text" maxlength="30" autocomplete="nickname" placeholder="例：ゆき" value="${escapeHtml(savedNick())}"></label>
+    ${SHEET_ENDPOINT ? `<p class="note">回答（ニックネーム・質問への回答・スクリーンタイム）は集計用のスプレッドシートに保存されます。</p>` : ""}
+    <button class="btn" id="go" disabled>動画を読み込み中…</button>`;
+  const go = document.getElementById("go");
+  const ready = () => { go.disabled = false; go.textContent = "スタート"; };
+  if (slides[0].readyState >= 3) ready(); else slides[0].addEventListener("canplaythrough", ready, { once:true });
+  setTimeout(ready, 4000);
+  go.onclick = start;
+}
+
+function savedNick(){ try { return localStorage.getItem("reelRecallNick") || ""; } catch(e){ return ""; } }
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function start(){
+  S.nick = (document.getElementById("nick").value || "").trim().slice(0,30);
+  try { localStorage.setItem("reelRecallNick", S.nick); } catch(e){}
+  S.phase = "watch"; cover.hidden = true;
+  card.innerHTML = `<span class="eyebrow">ステップ 1 / 3</span><h2>リールを見てください</h2>
+    <p>いつも通りの感覚でどうぞ。</p>`;
+  show(0);
+}
+
+let gapTimer;
+function scrollCard(){
+  card.innerHTML = `<span class="eyebrow">ステップ 2 / 3</span><h2>そのまま見ていてください</h2>
+    <p>リールが自動でスクロールされます。</p>
+    <div class="big" id="gap">2 / 4</div><span class="tag">本目</span>`;
+  clearInterval(gapTimer);
+  gapTimer = setInterval(()=>{ const g=document.getElementById("gap"); if (!g || S.phase!=="scroll") return clearInterval(gapTimer);
+    g.textContent = (S.idx+1)+" / "+slides.length; }, 150);
+}
+
+function quiz(){
+  S.phase = "quiz"; S.gap = (performance.now()-S.gapStart)/1000;
+  slides.forEach(v=>v.pause());
+  cover.hidden = false; setCover("一時停止","何が映っていた？");
+  const t = S.reels[0], feed = S.reels.slice(1);
+  const chromeQ = (q, key, extra) => {
+    const lures = shuffle(feed.map(r=>r[key])).slice(0,2);
+    return { q, correct:t[key], lures, options: shuffle([t[key], ...lures, extra]), kind:"screen", key };
+  };
+  let extraLikes; do extraLikes = randLikes(); while (S.reels.some(r=>r.likes===extraLikes));
+  S.qs = [
+    ...VIDEO_QS.map(q=>({ ...q, options: shuffle(q.options), kind:"video" })),
+    chromeQ("キャプションは何だった？", "caption", S.spare.caption),
+    chromeQ("投稿したアカウントは？", "handle", S.spare.handle),
+    chromeQ("いいね数はいくつだった？", "likes", extraLikes),
+  ].map(q=>({ ...q, answer:null }));
+  card.innerHTML = `<span class="eyebrow">ステップ 3 / 3・${S.gap.toFixed(0)}秒後</span>
+    <h2>最初に見たリールについて質問です</h2><p>覚えている範囲でかまいません。</p>` +
+    S.qs.map((q,qi)=>`<div class="q"><span class="tag">${q.kind==="video"?"動画の内容":"画面の表示"}</span><h3>${qi+1}. ${q.q}</h3><div class="opts">${
+      q.options.map((o,oi)=>`<button class="opt" id="o${qi}_${oi}" data-q="${qi}" data-o="${oi}">${q.key==="caption" ? "「"+o+"」" : o}</button>`).join("")
+    }</div></div>`).join("") + `<div id="next"></div>`;
+  card.querySelectorAll(".opt").forEach(b=>b.onclick=()=>answer(+b.dataset.q, +b.dataset.o));
+}
+
+function answer(qi, oi){
+  const q = S.qs[qi]; if (q.answer!==null) return;
+  q.answer = q.options[oi];
+  q.options.forEach((o,i)=>{ const b=document.getElementById(`o${qi}_${i}`); b.disabled=true;
+    if (o===q.correct) b.classList.add("right"); else if (i===oi) b.classList.add("wrong");
+    if (q.lures.includes(o)) b.classList.add("lure"); });
+  if (S.qs.every(q=>q.answer!==null)){
+    document.getElementById("next").innerHTML = `<button class="btn" id="nx">次へ</button>`;
+    const nx = document.getElementById("nx"); nx.onclick = screenTime; nx.focus();
+  }
+}
+
+function screenTime(){
+  S.phase = "screentime";
+  setCover("あと少し","最後の質問です");
+  card.innerHTML = `<span class="eyebrow">最後の質問</span>
+    <h2>1日の平均スクリーンタイムはどれくらいですか？</h2>
+    <p>スマホの設定で確認できます。iPhone は「設定 → スクリーンタイム」、Android は「設定 → Digital Wellbeing」。わからなければだいたいでかまいません。</p>
+    <form id="stForm" class="st" novalidate>
+      <label class="field small" for="stH"><span class="tag">時間</span><input id="stH" type="number" inputmode="numeric" min="0" max="24" step="1" placeholder="例：5" required></label>
+      <label class="field small" for="stM"><span class="tag">分</span><input id="stM" type="number" inputmode="numeric" min="0" max="59" step="1" placeholder="例：30"></label>
+    </form>
+    <p class="note err" id="stErr" hidden></p>
+    <button class="btn" id="stGo" type="submit" form="stForm">結果を見る</button>`;
+  const f = document.getElementById("stForm"); document.getElementById("stH").focus();
+  f.addEventListener("submit", ev => {
+    ev.preventDefault();
+    const hRaw = document.getElementById("stH").value, mRaw = document.getElementById("stM").value;
+    const h = Number(hRaw), m = mRaw==="" ? 0 : Number(mRaw), err = document.getElementById("stErr");
+    const bad = hRaw==="" || !Number.isInteger(h) || !Number.isInteger(m) || h<0 || m<0 || m>59 || h*60+m>24*60;
+    if (bad){ err.textContent = "時間は0〜24、分は0〜59の整数で入力してください（合計24時間まで）。"; err.hidden = false; return; }
+    S.screenMin = h*60+m; results();
+  });
+}
+
+function results(){
+  S.phase = "results";
+  const right = q => q.answer===q.correct;
+  const total = S.qs.filter(right).length, n = S.qs.length;
+  const vid = S.qs.filter(q=>q.kind==="video"), scr = S.qs.filter(q=>q.kind==="screen");
+  const fooled = S.qs.filter(q=>!right(q) && q.lures.includes(q.answer)).length;
+  const verdict = total>=7 ? "完璧な集中力。スクロールしても全部覚えていました。"
+    : total>=5 ? "高い集中力。少し抜けた部分はあるけれど、しっかり記憶に残っています。"
+    : total>=3 ? "よくある「スクロール脳」。大まかには覚えているけれど、細かい部分は後のリールに上書きされました。"
+    : "今回はフィードの勝ち。後のリールで最初のリールがほぼ押し流されました。";
+  setCover(`${total}/${n}`, "正解");
+  card.innerHTML = `<span class="eyebrow">結果・実はこれは記憶のテストでした</span>
+    <h2>${verdict}</h2>
+    <div class="big">${total}/${n}</div>
+    <div class="split">
+      <div><span class="tag">動画の内容</span><b>${vid.filter(right).length}/${vid.length}</b></div>
+      <div><span class="tag">画面の表示</span><b>${scr.filter(right).length}/${scr.length}</b></div>
+    </div>
+    <p>${fooled ? `不正解のうち${fooled}問は、後のリールに出てきたものを選んでいました。これは「干渉」と呼ばれる現象で、新しい情報が覚えようとしていた記憶を上書きします。` : "後のリールにつられた不正解はありませんでした。"}</p>
+    <p>多くの人は、キャプションやアカウント名、いいね数より、動画の内容のほうをよく覚えています。スクロールで最初に消えるのは、こうした細かい情報です。</p>
+    <p class="note">あなたのスクリーンタイム：1日 ${Math.floor(S.screenMin/60)}時間${S.screenMin%60}分 ・ リールが終わってから質問までの時間：${S.gap.toFixed(1)}秒。気軽に遊ぶためのものなので、医学的な測定ではありません。</p>
+    <p class="note" id="saveStatus"></p>
+    <button class="btn" id="again">もう一度</button>
+    <p class="note">動画は同じですが、キャプション・アカウント・数字は毎回変わります。</p>`;
+  document.getElementById("again").onclick = intro;
+  saveResult({ total, n, video:vid.filter(right).length, screen:scr.filter(right).length, fooled });
+}
+
+async function saveResult(r){
+  const el = document.getElementById("saveStatus");
+  if (!SHEET_ENDPOINT) return;
+  el.textContent = "結果を保存中…";
+  const payload = {
+    nickname: S.nick || "",
+    total: r.total, max: r.n, video: r.video, screen: r.screen, fooled: r.fooled,
+    gapSeconds: Math.round(S.gap*10)/10,
+    screenTimeMinutes: S.screenMin,
+    answers: S.qs.map((q,i)=>`Q${i+1}:${q.answer===q.correct?"○":"×"}${q.answer===q.correct?"":"("+q.answer+")"}`).join(" "),
+    playId: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()),
+  };
+  try {
+    // text/plain にすると CORS のプリフライトが発生せず、Apps Script に直接送れる
+    await fetch(SHEET_ENDPOINT, { method:"POST", mode:"no-cors", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+    el.textContent = "結果をスプレッドシートに保存しました。";
+  } catch(e){
+    el.textContent = "結果を保存できませんでした。通信状況を確認して、もう一度お試しください。";
+  }
+}
+
+intro();
+})();
+</script>
+
+</body>
+</html>
