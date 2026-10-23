@@ -56,6 +56,13 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(32px,6vw,52px);lin
   background:linear-gradient(#1a1f36,#0b0e1a);color:#fff}
 .cover strong{font:400 26px var(--display)}
 .cover span{font-size:14px;color:rgba(255,255,255,.65)}
+/* スマホ（縦並び）のときだけ、下の質問エリアへ誘導するボタンを出す */
+.cue{display:none;margin-top:14px;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;cursor:pointer;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);color:#fff;font:700 14px var(--body)}
+.cue .arr{display:inline-block;font-size:18px;line-height:1;animation:nudge 1.1s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:translateY(-2px)}50%{transform:translateY(4px)}}
+@media (max-width:760px){ .cue{display:inline-flex} }
+.cue:focus-visible{outline:3px solid #fff;outline-offset:2px}
 
 .panel{display:flex;flex-direction:column;gap:18px;min-width:0}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px}
@@ -86,13 +93,28 @@ h2{font-family:var(--body);font-weight:700;font-size:22px;line-height:1.4;margin
 .st{display:flex;gap:12px;flex-wrap:wrap}
 .field.small{max-width:120px}
 .err{color:var(--bad)}
+.survey{display:flex;flex-direction:column;gap:12px}
+.sq{border:1px solid var(--line);border-radius:12px;padding:12px 14px 14px;margin:0;display:flex;flex-direction:column;gap:10px;min-width:0}
+.sq.missing{border-color:var(--bad);background:color-mix(in srgb, var(--bad) 7%, transparent)}
+.sq legend{font:700 15px var(--body);padding:0 4px;color:var(--ink)}
+.hm{display:flex;gap:14px;flex-wrap:wrap}
+.hm label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:14px}
+.hm select,.txt{font:500 16px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.hm select{min-width:76px}
+.txt{width:100%;max-width:320px}
+.hm select:focus-visible,.txt:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer;color:var(--ink)}
+.chip input{accent-color:var(--accent);margin:0}
+.chip:has(input:checked){border-color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent)}
+.chip:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:1px}
 .split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .split div{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
 .split b{font-family:var(--mono);font-size:22px;font-variant-numeric:tabular-nums}
 .note{font-size:13px;color:var(--muted)}
 footer{font-size:12px;color:var(--muted)}
 footer a{color:inherit}
-@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} .cue .arr{animation:none} }
 </style>
 </head>
 <body>
@@ -106,7 +128,7 @@ footer a{color:inherit}
   <div class="app">
     <div class="phone"><div class="screen" id="screen">
       <div class="track" id="track"></div>
-      <div class="cover" id="cover"><strong>準備OK？</strong><span>音ありがおすすめ</span></div>
+      <div class="cover" id="cover"><strong>準備OK？</strong><span>音ありがおすすめ</span><button class="cue" id="cue" type="button" hidden><em></em><b class="arr" aria-hidden="true">↓</b></button></div>
     </div></div>
     <div class="panel"><div class="card" id="card"></div></div>
   </div>
@@ -117,7 +139,7 @@ footer a{color:inherit}
 <script>
 (() => {
 // ▼ Google Apps Script の「ウェブアプリ URL」をここに貼る（空のままなら結果は保存されません）
-const SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbzIpcfxh-c7UJm4bicC6mvANqnnBzW5Eus7tOTXYAUBToc1Y7XkTyGng2XRF8ANTGFCbQ/exec";
+const SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbwKef9XAmz1A_NNpLo9YDY86No__Xv5HWCZEJCj6NgVNIgb3MjxPRliR499LF4Nu0Wb_g/exec";
 
 const CAPTIONS = ["朝ってこんな感じ","コーヒー飲む前の私","誰も聞いてないけど私の朝","10段階で評価して","何回も見ちゃう","リクエストにお応えしてパート2","オフィスのいつもの一日","最後まで見て","話題のやつやってみた","これ完全に私","POV：また月曜日","小さな幸せ"];
 const HANDLES = ["@kai.moves","@nori_eats","@tofu.daily","@sunny.clips","@mika_vlog","@ren.outside","@hana.edits","@daichi.run","@pixel.pao","@yuzu.life","@lumi.loops","@bento.boy"];
@@ -184,11 +206,18 @@ function advance(i){
 
 /* ---------- パネル ---------- */
 const card = document.getElementById("card"), cover = document.getElementById("cover");
-const setCover = (a,b) => { cover.querySelector("strong").textContent = a; cover.querySelector("span").textContent = b; };
+const cue = document.getElementById("cue");
+const setCover = (a,b,c) => { cover.querySelector("strong").textContent = a; cover.querySelector("span").textContent = b;
+  cue.hidden = !c; if (c) cue.querySelector("em").textContent = c; };
+const isNarrow = () => window.matchMedia("(max-width:760px)").matches;
+const smooth = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+// スマホでは、次にやることがある場所まで自動でスクロールする
+function bring(el, block){ if (!isNarrow()) return; setTimeout(()=>el.scrollIntoView({ behavior:smooth(), block: block||"start" }), 200); }
+cue.addEventListener("click", ()=>card.scrollIntoView({ behavior:smooth(), block:"start" }));
 
 function intro(){
   newGame(); buildSlides();
-  cover.hidden = false; setCover("準備OK？","音ありがおすすめ");
+  cover.hidden = false; setCover("準備OK？","音ありがおすすめ","下にスクロールしてスタート");
   card.innerHTML = `<h2>はじめる前に</h2>
     <ol class="steps"><li>短いリールが何本か自動で流れます。いつもSNSを見ているときと同じように見てください。</li>
     <li>最後にいくつか簡単な質問に答えます。</li></ol>
@@ -210,14 +239,15 @@ function start(){
   S.nick = (document.getElementById("nick").value || "").trim().slice(0,30);
   try { localStorage.setItem("reelRecallNick", S.nick); } catch(e){}
   S.phase = "watch"; cover.hidden = true;
-  card.innerHTML = `<span class="eyebrow">ステップ 1 / 3</span><h2>リールを見てください</h2>
+  bring(document.querySelector(".phone"), "center");
+  card.innerHTML = `<span class="eyebrow">ステップ 1 / 4</span><h2>リールを見てください</h2>
     <p>いつも通りの感覚でどうぞ。</p>`;
   show(0);
 }
 
 let gapTimer;
 function scrollCard(){
-  card.innerHTML = `<span class="eyebrow">ステップ 2 / 3</span><h2>そのまま見ていてください</h2>
+  card.innerHTML = `<span class="eyebrow">ステップ 2 / 4</span><h2>そのまま見ていてください</h2>
     <p>リールが自動でスクロールされます。</p>
     <div class="big" id="gap">2 / 4</div><span class="tag">本目</span>`;
   clearInterval(gapTimer);
@@ -228,7 +258,7 @@ function scrollCard(){
 function quiz(){
   S.phase = "quiz"; S.gap = (performance.now()-S.gapStart)/1000;
   slides.forEach(v=>v.pause());
-  cover.hidden = false; setCover("一時停止","何が映っていた？");
+  cover.hidden = false; setCover("一時停止","何が映っていた？","下にスクロールして質問に答える");
   const t = S.reels[0], feed = S.reels.slice(1);
   const chromeQ = (q, key, extra) => {
     const lures = shuffle(feed.map(r=>r[key])).slice(0,2);
@@ -241,12 +271,13 @@ function quiz(){
     chromeQ("投稿したアカウントは？", "handle", S.spare.handle),
     chromeQ("いいね数はいくつだった？", "likes", extraLikes),
   ].map(q=>({ ...q, answer:null }));
-  card.innerHTML = `<span class="eyebrow">ステップ 3 / 3・${S.gap.toFixed(0)}秒後</span>
+  card.innerHTML = `<span class="eyebrow">ステップ 3 / 4・${S.gap.toFixed(0)}秒後</span>
     <h2>最初に見たリールについて質問です</h2><p>覚えている範囲でかまいません。</p>` +
     S.qs.map((q,qi)=>`<div class="q"><span class="tag">${q.kind==="video"?"動画の内容":"画面の表示"}</span><h3>${qi+1}. ${q.q}</h3><div class="opts">${
       q.options.map((o,oi)=>`<button class="opt" id="o${qi}_${oi}" data-q="${qi}" data-o="${oi}">${q.key==="caption" ? "「"+o+"」" : o}</button>`).join("")
     }</div></div>`).join("") + `<div id="next"></div>`;
   card.querySelectorAll(".opt").forEach(b=>b.onclick=()=>answer(+b.dataset.q, +b.dataset.o));
+  bring(card);
 }
 
 function answer(qi, oi){
@@ -261,27 +292,74 @@ function answer(qi, oi){
   }
 }
 
+// ---------- 最後のアンケート ----------
+const LATE = ["夜はほとんど使わない","22時より前まで","22時〜23時","23時〜0時","0時〜1時","1時〜2時","2時以降"];
+const DISTRACT = ["スマホの通知","SNS（Instagram・X・TikTokなど）","動画（YouTubeなど）","LINE・メッセージ","ゲーム","周りの人や音","考えごと・眠気","その他"];
+const FREQ = ["ほとんどない","たまにある","ときどきある","よくある","ほぼいつも"];
+
+function hmSelect(id, maxH, minStep){
+  const h = `<option value="">--</option>` + Array.from({length:maxH+1},(_,i)=>`<option value="${i}">${i}</option>`).join("");
+  const m = Array.from({length:60/minStep},(_,i)=>`<option value="${i*minStep}">${String(i*minStep).padStart(2,"0")}</option>`).join("");
+  return `<div class="hm"><label for="${id}H"><select id="${id}H">${h}</select><span>時間</span></label>
+    <label for="${id}M"><select id="${id}M">${m}</select><span>分</span></label></div>`;
+}
+function radios(name, list){
+  return `<div class="chips">${list.map((t,i)=>`<label class="chip" for="${name}${i}"><input type="radio" id="${name}${i}" name="${name}" value="${i}"><span>${t}</span></label>`).join("")}</div>`;
+}
+
 function screenTime(){
-  S.phase = "screentime";
-  setCover("あと少し","最後の質問です");
-  card.innerHTML = `<span class="eyebrow">最後の質問</span>
-    <h2>1日の平均スクリーンタイムはどれくらいですか？</h2>
-    <p>スマホの設定で確認できます。iPhone は「設定 → スクリーンタイム」、Android は「設定 → Digital Wellbeing」。わからなければだいたいでかまいません。</p>
-    <form id="stForm" class="st" novalidate>
-      <label class="field small" for="stH"><span class="tag">時間</span><input id="stH" type="number" inputmode="numeric" min="0" max="24" step="1" placeholder="例：5" required></label>
-      <label class="field small" for="stM"><span class="tag">分</span><input id="stM" type="number" inputmode="numeric" min="0" max="59" step="1" placeholder="例：30"></label>
+  S.phase = "survey";
+  setCover("あと少し","最後のアンケートです","下にスクロールして答える");
+  card.innerHTML = `<span class="eyebrow">ステップ 4 / 4・最後のアンケート</span>
+    <h2>ふだんのスマホの使い方について教えてください</h2>
+    <p>だいたいでかまいません。スクリーンタイムは iPhone なら「設定 → スクリーンタイム」、Android なら「設定 → Digital Wellbeing」で確認できます。</p>
+    <form id="sv" class="survey" novalidate>
+      <fieldset class="sq" id="q_st"><legend>1. 1日の平均スクリーンタイム（全体）</legend>${hmSelect("st",24,10)}</fieldset>
+      <fieldset class="sq" id="q_sns"><legend>2. そのうち SNS（Instagram・X・TikTok など）の時間</legend>${hmSelect("sns",24,10)}</fieldset>
+      <fieldset class="sq" id="q_sl"><legend>3. 1日の平均睡眠時間</legend>${hmSelect("sl",16,15)}</fieldset>
+      <fieldset class="sq" id="q_late"><legend>4. 夜、何時ごろまでスマホを使っていますか？</legend>${radios("late",LATE)}</fieldset>
+      <fieldset class="sq" id="q_app"><legend>5. スマホを手に取って最初に開くアプリは？</legend>
+        <input class="txt" id="firstApp" type="text" maxlength="40" placeholder="例：Instagram、LINE"></fieldset>
+      <fieldset class="sq" id="q_dis"><legend>6. 勉強中にいちばん気が散る原因は？</legend>${radios("dis",DISTRACT)}
+        <input class="txt" id="disOther" type="text" maxlength="40" placeholder="その他の内容" hidden></fieldset>
+      <fieldset class="sq" id="q_freq"><legend>7. 作業中に気が散ると感じる頻度は？</legend>${radios("freq",FREQ)}</fieldset>
     </form>
-    <p class="note err" id="stErr" hidden></p>
-    <button class="btn" id="stGo" type="submit" form="stForm">結果を見る</button>`;
-  const f = document.getElementById("stForm"); document.getElementById("stH").focus();
+    <p class="note err" id="svErr" hidden></p>
+    <button class="btn" type="submit" form="sv">結果を見る</button>`;
+  const f = document.getElementById("sv");
+  f.querySelectorAll('input[name="dis"]').forEach(r=>r.addEventListener("change", ()=>{
+    const o = document.getElementById("disOther"); o.hidden = r.value!==String(DISTRACT.length-1) || !r.checked; if (!o.hidden) o.focus(); }));
+  f.addEventListener("change", e=>{ const fs = e.target.closest(".sq"); if (fs) fs.classList.remove("missing"); });
   f.addEventListener("submit", ev => {
     ev.preventDefault();
-    const hRaw = document.getElementById("stH").value, mRaw = document.getElementById("stM").value;
-    const h = Number(hRaw), m = mRaw==="" ? 0 : Number(mRaw), err = document.getElementById("stErr");
-    const bad = hRaw==="" || !Number.isInteger(h) || !Number.isInteger(m) || h<0 || m<0 || m>59 || h*60+m>24*60;
-    if (bad){ err.textContent = "時間は0〜24、分は0〜59の整数で入力してください（合計24時間まで）。"; err.hidden = false; return; }
-    S.screenMin = h*60+m; results();
+    const err = document.getElementById("svErr");
+    f.querySelectorAll(".sq").forEach(x=>x.classList.remove("missing"));
+    const hm = id => { const h = document.getElementById(id+"H").value; return h==="" ? null : Number(h)*60 + Number(document.getElementById(id+"M").value); };
+    const pick = n => { const r = f.querySelector(`input[name="${n}"]:checked`); return r ? Number(r.value) : null; };
+    const v = { st:hm("st"), sns:hm("sns"), sl:hm("sl"), late:pick("late"), app:document.getElementById("firstApp").value.trim(),
+                dis:pick("dis"), disOther:document.getElementById("disOther").value.trim(), freq:pick("freq") };
+    const checks = [["q_st",v.st!==null],["q_sns",v.sns!==null],["q_sl",v.sl!==null],["q_late",v.late!==null],["q_app",v.app!==""],
+                    ["q_dis",v.dis!==null && (v.dis!==DISTRACT.length-1 || v.disOther!=="")],["q_freq",v.freq!==null]];
+    const missing = checks.filter(c=>!c[1]).map(c=>c[0]);
+    let msg = "";
+    if (missing.length) msg = "まだ答えていない質問があります（赤枠の質問）。";
+    else if (v.st>24*60 || v.sns>24*60) { msg = "スクリーンタイムは24時間以内で選んでください。"; missing.push(v.st>24*60?"q_st":"q_sns"); }
+    else if (v.sns>v.st) { msg = "SNSの時間が全体のスクリーンタイムより長くなっています。"; missing.push("q_sns"); }
+    if (msg){
+      missing.forEach(id=>document.getElementById(id).classList.add("missing"));
+      err.textContent = msg; err.hidden = false;
+      document.getElementById(missing[0]).scrollIntoView({ behavior:smooth(), block:"center" });
+      return;
+    }
+    S.survey = {
+      screenTimeMinutes: v.st, snsMinutes: v.sns, sleepMinutes: v.sl,
+      lateUse: LATE[v.late], firstApp: v.app,
+      distraction: v.dis===DISTRACT.length-1 ? "その他：" + v.disOther : DISTRACT[v.dis],
+      distractFreq: FREQ[v.freq], distractFreqScore: v.freq+1,
+    };
+    S.screenMin = v.st; results();
   });
+  bring(card);
 }
 
 function results(){
@@ -294,7 +372,7 @@ function results(){
     : total>=5 ? "高い集中力。少し抜けた部分はあるけれど、しっかり記憶に残っています。"
     : total>=3 ? "よくある「スクロール脳」。大まかには覚えているけれど、細かい部分は後のリールに上書きされました。"
     : "今回はフィードの勝ち。後のリールで最初のリールがほぼ押し流されました。";
-  setCover(`${total}/${n}`, "正解");
+  setCover(`${total}/${n}`, "正解","下にスクロールして結果を見る");
   card.innerHTML = `<span class="eyebrow">結果・実はこれは記憶のテストでした</span>
     <h2>${verdict}</h2>
     <div class="big">${total}/${n}</div>
@@ -304,11 +382,12 @@ function results(){
     </div>
     <p>${fooled ? `不正解のうち${fooled}問は、後のリールに出てきたものを選んでいました。これは「干渉」と呼ばれる現象で、新しい情報が覚えようとしていた記憶を上書きします。` : "後のリールにつられた不正解はありませんでした。"}</p>
     <p>多くの人は、キャプションやアカウント名、いいね数より、動画の内容のほうをよく覚えています。スクロールで最初に消えるのは、こうした細かい情報です。</p>
-    <p class="note">あなたのスクリーンタイム：1日 ${Math.floor(S.screenMin/60)}時間${S.screenMin%60}分 ・ リールが終わってから質問までの時間：${S.gap.toFixed(1)}秒。気軽に遊ぶためのものなので、医学的な測定ではありません。</p>
+    <p class="note">あなたのスクリーンタイム：1日 ${Math.floor(S.survey.screenTimeMinutes/60)}時間${S.survey.screenTimeMinutes%60}分（うちSNS ${Math.floor(S.survey.snsMinutes/60)}時間${S.survey.snsMinutes%60}分）・ 睡眠 ${Math.floor(S.survey.sleepMinutes/60)}時間${S.survey.sleepMinutes%60}分 ・ リールが終わってから質問までの時間：${S.gap.toFixed(1)}秒。気軽に遊ぶためのものなので、医学的な測定ではありません。</p>
     <p class="note" id="saveStatus"></p>
     <button class="btn" id="again">もう一度</button>
     <p class="note">動画は同じですが、キャプション・アカウント・数字は毎回変わります。</p>`;
   document.getElementById("again").onclick = intro;
+  bring(card);
   saveResult({ total, n, video:vid.filter(right).length, screen:scr.filter(right).length, fooled });
 }
 
@@ -320,7 +399,7 @@ async function saveResult(r){
     nickname: S.nick || "",
     total: r.total, max: r.n, video: r.video, screen: r.screen, fooled: r.fooled,
     gapSeconds: Math.round(S.gap*10)/10,
-    screenTimeMinutes: S.screenMin,
+    ...S.survey,
     answers: S.qs.map((q,i)=>`Q${i+1}:${q.answer===q.correct?"○":"×"}${q.answer===q.correct?"":"("+q.answer+")"}`).join(" "),
     playId: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()),
   };
